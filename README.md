@@ -4,10 +4,11 @@ Repositorio listo para desplegar un **almacén vectorial** en Coolify. Es la pie
 que falta tras el episodio 1 (Coolify + Outline): aquí montamos la base de datos
 donde vivirá el índice de embeddings que usará el sistema RAG construido con n8n.
 
-- Imagen: `pgvector/pgvector:0.8.7-pg17` (versión fijada, nunca `latest`)
+- Imagen base: `pgvector/pgvector:0.8.7-pg17` (versión fijada, nunca `latest`)
 - Un único servicio `postgres` con volumen persistente
 - Esquema de dos tablas: `knowledge_documents` y `knowledge_chunks`
 - Índice HNSW para búsqueda por similitud coseno
+- Un `Dockerfile` mínimo que hornea el esquema dentro de la imagen (ver sección 3)
 
 Todo funciona importando el repositorio en Coolify **sin editar nada** salvo las
 variables de entorno.
@@ -68,7 +69,46 @@ defecto). Si necesitas más precisión a cambio de más tiempo/RAM, sube
 
 ---
 
-## 3. Despliegue en Coolify
+## 3. Por qué hay un Dockerfile (y no solo un compose)
+
+Esta es la primera trampa real del episodio y merece explicación.
+
+Al desplegar un **"Docker Compose from a Git repository"**, Coolify **no copia el
+código del repositorio** dentro del directorio donde ejecuta el compose. Solo
+renderiza el `docker-compose.yaml` con tus variables. Es decir: los montajes
+relativos a ficheros del repo, como
+
+```yaml
+volumes:
+  - ./db/init:/docker-entrypoint-initdb.d   # ❌ NO funciona en Coolify
+```
+
+dejan ese directorio **vacío** dentro del contenedor, y PostgreSQL termina arrancando
+sin ejecutar el `01-schema.sql`. La base queda sin extensión `vector` ni tablas, y
+te enteras cuando el primer workflow de n8n falla.
+
+La solución robusta es **hornear el esquema dentro de la imagen** con un `Dockerfile`
+de dos líneas:
+
+```dockerfile
+FROM pgvector/pgvector:0.8.7-pg17
+COPY db/init/01-schema.sql /docker-entrypoint-initdb.d/01-schema.sql
+```
+
+Y en el compose, construir esa imagen en lugar de usar la oficial directamente:
+
+```yaml
+services:
+  postgres:
+    build: .        # ← construye el Dockerfile de este repo
+```
+
+Coolify construye la imagen (en segundos, la capa base ya está cacheada) y el script
+se ejecuta solo en el primer arranque. **No dependes de ningún fichero externo.**
+
+---
+
+## 4. Despliegue en Coolify
 
 El flujo es idéntico al del episodio 1: **Docker Compose desde un repositorio
 de Git**.
@@ -104,7 +144,7 @@ Esto es **solo para depuración**; en producción déjalo cerrado.
 
 ---
 
-## 4. Cómo verificar que funciona
+## 5. Cómo verificar que funciona
 
 Con el stack levantado, ejecuta el script incluido desde la raíz del repositorio:
 
@@ -161,7 +201,7 @@ aparece con datos de verdad.
 
 ---
 
-## 5. Uso de recursos (referencia realista)
+## 6. Uso de recursos (referencia realista)
 
 Números para una base de conocimiento de **unos pocos miles de fragmentos**
 (por ejemplo ~2.000–5.000 chunks de 384 dimensiones), medidos en un VPS pequeño:
@@ -183,7 +223,7 @@ el `shared_buffers` de PostgreSQL.
 
 ---
 
-## 6. Cómo cambiar la dimensión del vector
+## 7. Cómo cambiar la dimensión del vector
 
 La columna `embedding` está definida como `vector(384)` porque el modelo
 `intfloat/multilingual-e5-small` produce 384 dimensiones.
@@ -209,6 +249,7 @@ antes de indexar en serio.
 ```
 .
 ├── docker-compose.yaml        # Servicio postgres, volumen, healthcheck
+├── Dockerfile                # Imagen propia: hornea el esquema dentro (ver sección 3)
 ├── db/init/01-schema.sql     # Esquema + extensión + índices (primer arranque)
 ├── .env.example              # Plantilla de variables de entorno
 ├── scripts/verify.sh         # Verificación rápida del almacén
