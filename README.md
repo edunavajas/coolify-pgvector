@@ -76,7 +76,7 @@ de Git**.
 1. En Coolify, crea un nuevo recurso: **+ New → Resource → Docker Compose from a
    Git repository** (o "Docker Compose Empty" no; aquí queremos desde Git).
 2. Elige el proveedor de Git y este repositorio.
-3. Comprueba que Coolify detecta **/docker-compose.yml** como ruta del compose.
+3. Comprueba que Coolify detecta **/docker-compose.yaml** como ruta del compose.
 4. Ve a la pestaña **Environment Variables** del recurso y define:
    - `POSTGRES_USER` (por defecto `knowledge`)
    - `POSTGRES_PASSWORD` → **ponle una tuya** (o genera una con Coolify). No
@@ -93,7 +93,7 @@ de Git**.
 
 Por defecto **no** se publica ningún puerto: no hace falta, n8n llega por la red
 interna. Si necesitas conectarte con un cliente SQL desde fuera para inspeccionar,
-descomenta el bloque `ports` en `docker-compose.yml`:
+descomenta el bloque `ports` en `docker-compose.yaml`:
 
 ```yaml
 ports:
@@ -208,7 +208,7 @@ antes de indexar en serio.
 
 ```
 .
-├── docker-compose.yml        # Servicio postgres, volumen, healthcheck
+├── docker-compose.yaml        # Servicio postgres, volumen, healthcheck
 ├── db/init/01-schema.sql     # Esquema + extensión + índices (primer arranque)
 ├── .env.example              # Plantilla de variables de entorno
 ├── scripts/verify.sh         # Verificación rápida del almacén
