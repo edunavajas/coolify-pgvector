@@ -1,0 +1,6 @@
+# Variables de entorno (nunca subir .env)
+.env
+
+# Datos locales de PostgreSQL si se montasen en disco
+data/
+pgdata/

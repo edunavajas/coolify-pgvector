@@ -1,0 +1,32 @@
+# PostgreSQL + pgvector para Coolify
+# Importar como "Docker Compose from a Git repository".
+# Coolify gestiona la red y el enrutado: no añadir etiquetas de Traefik aquí.
+services:
+  postgres:
+    # Versión fijada (no usar 'latest' ni etiquetas móviles).
+    # 0.8.7-pg17 = pgvector 0.8.7 sobre PostgreSQL 17.
+    image: pgvector/pgvector:0.8.7-pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-knowledge}
+      # Contraseña: DEBE sobrescribirse en Coolify. El valor por defecto es solo para desarrollo local.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME_overwrite_in_coolify}
+      POSTGRES_DB: ${POSTGRES_DB:-knowledge}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # El script de init solo se ejecuta en el PRIMER arranque (volumen vacío).
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    # Puerto público OPCIONAL, solo para depuración. Descomentar si se necesita
+    # conectarse desde fuera (por ejemplo con un cliente SQL externo).
+    # No es necesario: n8n se conecta por la red interna de Coolify.
+    # ports:
+    #   - "${POSTGRES_DEBUG_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-knowledge} -d ${POSTGRES_DB:-knowledge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  pgdata:
