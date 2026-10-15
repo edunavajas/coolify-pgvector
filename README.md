@@ -6,7 +6,7 @@ donde vivirá el índice de embeddings que usará el sistema RAG construido con 
 
 - Imagen base: `pgvector/pgvector:0.8.7-pg17` (versión fijada, nunca `latest`)
 - Un único servicio `knowledge-db` con volumen persistente
-- Esquema de dos tablas: `knowledge_documents` y `knowledge_chunks`
+- Esquema de dos tablas: `knowledge_documents` y `knowledge_chunks` (+ `knowledge_index_failures`, opcional, para registrar fallos de indexado)
 - Índice HNSW para búsqueda por similitud coseno
 - Un `Dockerfile` mínimo que hornea el esquema dentro de la imagen (ver sección 3)
 
