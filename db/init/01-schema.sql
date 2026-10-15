@@ -50,3 +50,17 @@ CREATE INDEX IF NOT EXISTS knowledge_documents_source_type_idx
     ON knowledge_documents (source_type);
 CREATE INDEX IF NOT EXISTS knowledge_documents_collection_idx
     ON knowledge_documents (collection);
+
+
+-- Registro de fallos del indexado.
+-- Cuando el servidor de embeddings no responde para un fragmento, el flujo de n8n NO
+-- aborta: guarda aqui el motivo y sigue con el resto. Sirve para saber que quedo sin
+-- indexar y poder revisarlo.
+CREATE TABLE IF NOT EXISTS knowledge_index_failures (
+    id           bigserial PRIMARY KEY,
+    created_at   timestamptz NOT NULL DEFAULT now(),
+    source_type  text,
+    external_id  text,
+    chunk_index  integer,
+    reason       text
+);
