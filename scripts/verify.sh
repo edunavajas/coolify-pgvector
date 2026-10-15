@@ -11,7 +11,7 @@ DB_NAME="${POSTGRES_DB:-knowledge}"
 COMPOSE="docker compose"
 
 psql_run() {
-  $COMPOSE exec -T postgres psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 "$@"
+  $COMPOSE exec -T knowledge-db psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 "$@"
 }
 
 echo "== Versión de pgvector =="

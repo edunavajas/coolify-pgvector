@@ -5,7 +5,7 @@ que falta tras el episodio 1 (Coolify + Outline): aquí montamos la base de dato
 donde vivirá el índice de embeddings que usará el sistema RAG construido con n8n.
 
 - Imagen base: `pgvector/pgvector:0.8.7-pg17` (versión fijada, nunca `latest`)
-- Un único servicio `postgres` con volumen persistente
+- Un único servicio `knowledge-db` con volumen persistente
 - Esquema de dos tablas: `knowledge_documents` y `knowledge_chunks`
 - Índice HNSW para búsqueda por similitud coseno
 - Un `Dockerfile` mínimo que hornea el esquema dentro de la imagen (ver sección 3)
@@ -99,7 +99,7 @@ Y en el compose, construir esa imagen en lugar de usar la oficial directamente:
 
 ```yaml
 services:
-  postgres:
+  knowledge-db:
     build: .        # ← construye el Dockerfile de este repo
 ```
 
@@ -129,6 +129,22 @@ de Git**.
 6. Cuando el contenedor esté en estado *running*/*healthy*, ya tienes el almacén
    vectorial listo para que n8n se conecte por la red interna.
 
+### ⚠️ El nombre del servicio no es casual: se llama `knowledge-db`
+
+En la red de Coolify, **el nombre del servicio es el hostname** que usan los demás
+contenedores para llegar a esta base. Por eso aquí **no** se llama `postgres`.
+
+Si lo llamases `postgres` y en tu servidor existiera **otro** contenedor con ese mismo
+nombre en la red compartida, n8n resolvería a **dos IPs** distintas y unas veces
+conectaría a tu base y otras a la otra. El síntoma es un error que engaña mucho:
+
+> `password authentication failed for user "knowledge"`
+
+Parece un problema de contraseña, pero es de **nombre**: estás hablando con otra base.
+Un nombre único (`knowledge-db`) elimina el problema de raíz.
+
+**En n8n, el host de la credencial de PostgreSQL es `knowledge-db`** (no `postgres`).
+
 ### Puerto público (solo para depurar)
 
 Por defecto **no** se publica ningún puerto: no hace falta, n8n llega por la red
@@ -155,7 +171,7 @@ Con el stack levantado, ejecuta el script incluido desde la raíz del repositori
 O a mano, entrando a `psql` en el contenedor:
 
 ```bash
-docker compose exec postgres psql -U knowledge -d knowledge
+docker compose exec knowledge-db psql -U knowledge -d knowledge
 ```
 
 Y dentro de `psql`:
@@ -248,7 +264,7 @@ antes de indexar en serio.
 
 ```
 .
-├── docker-compose.yaml        # Servicio postgres, volumen, healthcheck
+├── docker-compose.yaml        # Servicio knowledge-db, volumen, healthcheck
 ├── Dockerfile                # Imagen propia: hornea el esquema dentro (ver sección 3)
 ├── db/init/01-schema.sql     # Esquema + extensión + índices (primer arranque)
 ├── .env.example              # Plantilla de variables de entorno

@@ -5,8 +5,14 @@
 # Nota importante: se construye una imagen propia (build: .) porque Coolify no monta
 # el código del repositorio en despliegues de Docker Compose. Ver el Dockerfile y el
 # README (sección "Por qué hay un Dockerfile").
+#
+# El servicio se llama "knowledge-db" A PROPÓSITO (y no "postgres"). En la red
+# compartida de Coolify el nombre del servicio es el hostname; si lo llamas "postgres"
+# puede chocar con OTRO contenedor postgres de la misma red y n8n acabará conectando
+# a la base equivocada (error "password authentication failed"). Un nombre único evita
+# esa colisión.
 services:
-  postgres:
+  knowledge-db:
     build: .
     restart: unless-stopped
     environment:
